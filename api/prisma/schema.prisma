@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+
+model User {
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  name      String?
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  reviews   Review[]
+  sessions  Session[] // Add this line
+
+}
+
+model Review {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String   @db.LongText
+  contentHash String   @unique // Unique hash to prevent duplicate reviews
+  rating      Int      @default(0)
+  addressId   Int
+  userId      Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  address     Address  @relation(fields: [addressId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
+
+  // Single-field index annotations
+  @@index([addressId], map: "Review_addressId_fkey") // Index for filtering by addressId
+  @@index([userId], map: "Review_userId_fkey")       // Index for filtering by userId
+
+  // Composite index annotation
+  @@index([addressId, userId], map: "Review_addressId_userId_idx") // Composite index for filtering by address and user
+}
+
+
+
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  address   String   @unique
+  latitude  Float
+  longitude Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  reviews   Review[]
+}
